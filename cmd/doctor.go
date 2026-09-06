@@ -4,26 +4,52 @@ Copyright © 2026 Deepsayan-Das <deepsayandas274@gmail.com>
 package cmd
 
 import (
+	_ "embed"
 	"errors"
+	"fmt"
+	"os"
 	"os/exec"
+	"strings"
 
+	"github.com/Deepsayan-Das/nova/Types"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 )
 
-type Commands struct {
-	Name        string   `json:"name"`
-	Executables []string `json:"executables"`
-}
+//go:embed doctor.yaml
+var defaultDoctorYAML []byte
 
 // doctorCmd represents the doctor command
 var doctorCmd = &cobra.Command{
-	Use:   "doctor",
+	Use:   "doctor [tool]",
 	Short: "Check the health of your development environment",
 	Long: `doctor inspects your machine for the tools GalactOS development relies on
-	(Go, Docker, Git, and others as nova grows) and reports what's installed,
-	what's missing, and what needs attention — a single command instead of
-	checking each tool by hand.`,
+(Go, Docker, Git, and others as nova grows) using configurations from doctor.yaml.
+	
+You can test all tools by running:
+  nova doctor
+
+Or test a specific tool (e.g. Go) by passing its name:
+  nova doctor go`,
+	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		var yamlData []byte
+		if data, err := os.ReadFile("doctor.yaml"); err == nil {
+			yamlData = data
+		} else {
+			yamlData = defaultDoctorYAML
+		}
+		var config Types.DoctorConfig
+		_ = yaml.Unmarshal(yamlData, &config)
+
+		var completions []string
+		for _, check := range config.Checks {
+			if check.Key != "" {
+				completions = append(completions, fmt.Sprintf("%s\t%s", check.Key, check.Description))
+			}
+		}
+		return completions, cobra.ShellCompDirectiveNoFileComp
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		green := color.New(color.FgGreen)
 		red := color.New(color.FgRed)
@@ -31,50 +57,103 @@ var doctorCmd = &cobra.Command{
 		cyan := color.New(color.FgCyan)
 
 		cyan.Println("==========Running HealthChecks==========")
-		test := []Commands{
-			{Name: "GO", Executables: []string{"go", "version"}},
-			{Name: "Docker", Executables: []string{"docker", "version"}},
-			{Name: "Git", Executables: []string{"git", "--version"}},
-			{Name: "Node.js", Executables: []string{"node", "--version"}},
-			{Name: "npm", Executables: []string{"npm", "--version"}},
-			{Name: "Python", Executables: []string{"python3", "--version"}},
-			{Name: "pip", Executables: []string{"pip3", "--version"}},
+
+		var yamlData []byte
+
+		// Try reading local doctor.yaml first if present
+		if data, readErr := os.ReadFile("doctor.yaml"); readErr == nil {
+			yamlData = data
+		} else {
+			yamlData = defaultDoctorYAML
 		}
 
-		for _, tool := range test {
-			cyan.Printf("Checking %s...\n", tool.Name)
+		var config Types.DoctorConfig
+		if err := yaml.Unmarshal(yamlData, &config); err != nil {
+			red.Printf("Error parsing doctor.yaml: %v\n", err)
+			return
+		}
 
-			comd := exec.Command(tool.Executables[0], tool.Executables[1:]...)
-			err := comd.Run()
+		checksToRun := config.Checks
 
-			switch {
-			case err == nil:
-				green.Printf("[SUCCESS] %v\n", tool.Name)
+		// Filter by target tool if positional arguments were passed (e.g. nova doctor go)
+		if len(args) > 0 {
+			var filtered []Types.ToolCheck
+			for _, check := range config.Checks {
+				for _, arg := range args {
+					if strings.EqualFold(check.Key, arg) || strings.EqualFold(check.Name, arg) {
+						filtered = append(filtered, check)
+						break
+					}
+				}
+			}
 
-			case errors.Is(err, exec.ErrNotFound):
-				red.Printf("[NOT FOUND] %v — not installed or not in PATH\n", tool.Name)
+			if len(filtered) == 0 {
+				var available []string
+				for _, check := range config.Checks {
+					if check.Key != "" {
+						available = append(available, fmt.Sprintf("%s (%s)", check.Name, check.Key))
+					} else {
+						available = append(available, check.Name)
+					}
+				}
+				yellow.Printf("No matching health checks found for target(s): %s\n", strings.Join(args, ", "))
+				cyan.Printf("Available tools: %s\n", strings.Join(available, ", "))
+				cyan.Println("==========HealthChecks Completed==========")
+				return
+			}
 
-			case errors.As(err, new(*exec.ExitError)):
-				yellow.Printf("[NOT RUNNING] %v — installed, but command failed (exit error)\n", tool.Name)
+			checksToRun = filtered
+		}
 
-			default:
-				red.Printf("[FAILED] %v — %v\n", tool.Name, err)
+		for _, tool := range checksToRun {
+			cyan.Printf("\nTarget: %s\n", tool.Name)
+			if tool.Description != "" {
+				fmt.Printf("Description: %s\n", tool.Description)
+			}
+
+			// Elaborate tests
+			if len(tool.Tests) > 0 {
+				for _, t := range tool.Tests {
+					if len(t.Command) == 0 {
+						continue
+					}
+					cyan.Printf("  Checking %s [%s]...\n", t.Name, strings.Join(t.Command, " "))
+					comd := exec.Command(t.Command[0], t.Command[1:]...)
+					runErr := comd.Run()
+
+					switch {
+					case runErr == nil:
+						green.Printf("  [SUCCESS] %s - %s\n", tool.Name, t.Name)
+					case errors.Is(runErr, exec.ErrNotFound):
+						red.Printf("  [NOT FOUND] %s - %s (executable '%s' not in PATH)\n", tool.Name, t.Name, t.Command[0])
+					case errors.As(runErr, new(*exec.ExitError)):
+						yellow.Printf("  [NOT RUNNING] %s - %s (command failed)\n", tool.Name, t.Name)
+					default:
+						red.Printf("  [FAILED] %s - %s (%v)\n", tool.Name, t.Name, runErr)
+					}
+				}
+			} else if len(tool.Executables) > 0 {
+				// Legacy simple executables check
+				cyan.Printf("  Checking %s...\n", tool.Name)
+				comd := exec.Command(tool.Executables[0], tool.Executables[1:]...)
+				runErr := comd.Run()
+
+				switch {
+				case runErr == nil:
+					green.Printf("  [SUCCESS] %s\n", tool.Name)
+				case errors.Is(runErr, exec.ErrNotFound):
+					red.Printf("  [NOT FOUND] %s — not installed or not in PATH\n", tool.Name)
+				case errors.As(runErr, new(*exec.ExitError)):
+					yellow.Printf("  [NOT RUNNING] %s — command failed\n", tool.Name)
+				default:
+					red.Printf("  [FAILED] %s — %v\n", tool.Name, runErr)
+				}
 			}
 		}
-		cyan.Println("==========HealthChecks Completed==========")
+		cyan.Println("\n==========HealthChecks Completed==========")
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(doctorCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// doctorCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// doctorCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

@@ -1,0 +1,56 @@
+# Nova Health Checks Configuration
+checks:
+  - name: "GO"
+    key: "go"
+    description: "Go programming language compiler and toolchain"
+    tests:
+      - name: "Go Binary"
+        command: ["go", "version"]
+      - name: "Go GOROOT"
+        command: ["go", "env", "GOROOT"]
+      - name: "Go GOPATH"
+        command: ["go", "env", "GOPATH"]
+
+  - name: "Docker"
+    key: "docker"
+    description: "Docker CLI and container engine"
+    tests:
+      - name: "Docker CLI"
+        command: ["docker", "--version"]
+      - name: "Docker Daemon Info"
+        command: ["docker", "info"]
+
+  - name: "Git"
+    key: "git"
+    description: "Git version control system"
+    tests:
+      - name: "Git Binary"
+        command: ["git", "--version"]
+
+  - name: "Node.js"
+    key: "node"
+    description: "Node.js JavaScript runtime"
+    tests:
+      - name: "Node Binary"
+        command: ["node", "--version"]
+
+  - name: "npm"
+    key: "npm"
+    description: "Node package manager"
+    tests:
+      - name: "npm Binary"
+        command: ["npm", "--version"]
+
+  - name: "Python"
+    key: "python"
+    description: "Python 3 interpreter"
+    tests:
+      - name: "Python Binary"
+        command: ["python3", "--version"]
+
+  - name: "pip"
+    key: "pip"
+    description: "Python package installer"
+    tests:
+      - name: "pip Binary"
+        command: ["pip3", "--version"]

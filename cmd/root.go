@@ -10,13 +10,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-
-
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "nova",
 	Short: "A CLI for GalactOS Operating System",
-	Long: `Nova is the root command line interface for the GalactOS Operating System. It provides various subcommands to manage and interact with the system, including configuration, monitoring, and maintenance tasks.`,
+	Long:  `Nova is the root command line interface for the GalactOS Operating System. It provides various subcommands to manage and interact with the system, including configuration, monitoring, and maintenance tasks.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	// Run: func(cmd *cobra.Command, args []string) { },
@@ -40,7 +38,5 @@ func init() {
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
-	
+
 }
-
-
