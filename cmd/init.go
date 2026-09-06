@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -133,6 +134,19 @@ func runInit(cmd *cobra.Command, args []string) {
 		}
 	}
 
+	metadataContent := fmt.Sprintf("language: %s\ntemplate: %s\ncreated: %s\nnova_version: %s\n",
+		selected.Language,
+		selected.Name,
+		time.Now().Format("2006-01-02"),
+		Version,
+	)
+	metadataPath := filepath.Join(targetDir, ".nova.yaml")
+	if err := os.WriteFile(metadataPath, []byte(metadataContent), 0644); err != nil {
+		fmt.Printf("Error creating metadata file: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Printf("  Created metadata file: %s\n", metadataPath)
+
 	fmt.Println("Project initialization complete!")
 }
 
@@ -166,7 +180,3 @@ func init() {
 	initCmd.Flags().String("template", "", "Template to use (e.g. cli, api, mvc, microservices)")
 	initCmd.Flags().Bool("git", true, "Initialize a Git repository (default true)")
 }
-
-
-
-

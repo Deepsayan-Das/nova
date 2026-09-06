@@ -10,10 +10,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const Version = "1.0.0"
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "nova",
-	Short: "A CLI for GalactOS Operating System",
+	Use:     "nova",
+	Version: Version,
+	Short:   "A CLI for GalactOS Operating System",
 	Long:  `Nova is the root command line interface for the GalactOS Operating System. It provides various subcommands to manage and interact with the system, including configuration, monitoring, and maintenance tasks.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
