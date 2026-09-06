@@ -1,0 +1,99 @@
+# Nova Install — Tool Registry
+# Debian/apt packages for tools that nova doctor checks for.
+# TODO: revisit as part of Apollo (Phase 13 package manager)
+tools:
+  - name: "Go"
+    key: "go"
+    description: "Go programming language compiler and toolchain"
+    executables: ["go"]
+    apt_package: "golang"
+
+  - name: "Docker"
+    key: "docker"
+    description: "Docker container engine"
+    executables: ["docker"]
+    apt_package: "docker.io"
+
+  - name: "Git"
+    key: "git"
+    description: "Git version control system"
+    executables: ["git"]
+    apt_package: "git"
+
+  - name: "Node.js"
+    key: "node"
+    description: "Node.js JavaScript runtime"
+    executables: ["node"]
+    apt_package: "nodejs"
+
+  - name: "npm"
+    key: "npm"
+    description: "Node package manager"
+    executables: ["npm"]
+    apt_package: "npm"
+
+  - name: "Python 3"
+    key: "python3"
+    description: "Python 3 interpreter"
+    executables: ["python3"]
+    apt_package: "python3"
+
+  - name: "pip3"
+    key: "pip3"
+    description: "Python package installer"
+    executables: ["pip3"]
+    apt_package: "python3-pip"
+
+  - name: "Java (JDK)"
+    key: "java"
+    description: "Java Development Kit"
+    executables: ["java", "javac"]
+    apt_package: "default-jdk"
+
+  - name: "GCC"
+    key: "gcc"
+    description: "GNU C compiler"
+    executables: ["gcc"]
+    apt_package: "gcc"
+
+  - name: "G++"
+    key: "g++"
+    description: "GNU C++ compiler"
+    executables: ["g++"]
+    apt_package: "g++"
+
+  - name: "Make"
+    key: "make"
+    description: "Build automation tool"
+    executables: ["make"]
+    apt_package: "make"
+
+  - name: "CMake"
+    key: "cmake"
+    description: "Cross-platform build system generator"
+    executables: ["cmake"]
+    apt_package: "cmake"
+
+  - name: "curl"
+    key: "curl"
+    description: "Command-line HTTP client"
+    executables: ["curl"]
+    apt_package: "curl"
+
+  - name: "wget"
+    key: "wget"
+    description: "Network file retriever"
+    executables: ["wget"]
+    apt_package: "wget"
+
+  - name: "Maven"
+    key: "mvn"
+    description: "Apache Maven build tool for Java"
+    executables: ["mvn"]
+    apt_package: "maven"
+
+  - name: "Gradle"
+    key: "gradle"
+    description: "Gradle build tool for Java/Kotlin"
+    executables: ["gradle"]
+    apt_package: "gradle"

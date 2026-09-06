@@ -30,7 +30,6 @@ func runProjectTest(cmd *cobra.Command, args []string) {
 	green := color.New(color.FgGreen)
 	red := color.New(color.FgRed)
 	cyan := color.New(color.FgCyan)
-	yellow := color.New(color.FgYellow)
 
 	var dest string
 	var extraArgs []string
@@ -63,79 +62,9 @@ func runProjectTest(cmd *cobra.Command, args []string) {
 
 	lang := strings.ToLower(strings.TrimSpace(metadataYaml.Language))
 
-	var execName string
-	var execArgs []string
-
-	switch lang {
-	case "go", "golang":
-		execName = "go"
-		execArgs = append([]string{"test", "./..."}, extraArgs...)
-
-	case "node", "javascript", "js", "typescript", "ts", "next.js", "next", "vite":
-		var pkgMgr string
-		for _, pm := range []string{"npm", "pnpm", "yarn", "bun"} {
-			if _, err := exec.LookPath(pm); err == nil {
-				pkgMgr = pm
-				break
-			}
-		}
-		if pkgMgr == "" {
-			red.Println("Error: No Node package manager (npm/yarn/pnpm/bun) found in PATH")
-			os.Exit(1)
-		}
-		execName = pkgMgr
-		execArgs = append([]string{"test"}, extraArgs...)
-
-	case "python", "python3", "py":
-		if _, err := exec.LookPath("pytest"); err == nil {
-			execName = "pytest"
-			execArgs = extraArgs
-		} else if _, err := exec.LookPath("python3"); err == nil {
-			execName = "python3"
-			execArgs = append([]string{"-m", "unittest", "discover"}, extraArgs...)
-		} else if _, err := exec.LookPath("python"); err == nil {
-			execName = "python"
-			execArgs = append([]string{"-m", "unittest", "discover"}, extraArgs...)
-		} else {
-			red.Println("Error: No Python interpreter or pytest found in PATH")
-			os.Exit(1)
-		}
-
-	case "java":
-		if fileExists(filepath.Join(dest, "gradlew")) || fileExists(filepath.Join(dest, "gradlew.bat")) {
-			if fileExists(filepath.Join(dest, "gradlew.bat")) && runtime.GOOS == "windows" {
-				execName = "cmd.exe"
-				execArgs = append([]string{"/c", "gradlew.bat", "test"}, extraArgs...)
-			} else {
-				execName = "./gradlew"
-				execArgs = append([]string{"test"}, extraArgs...)
-			}
-		} else if fileExists(filepath.Join(dest, "pom.xml")) {
-			execName = "mvn"
-			execArgs = append([]string{"test"}, extraArgs...)
-		} else if fileExists(filepath.Join(dest, "build.gradle")) || fileExists(filepath.Join(dest, "build.gradle.kts")) {
-			execName = "gradle"
-			execArgs = append([]string{"test"}, extraArgs...)
-		} else {
-			yellow.Println("Warning: No standard Java build file (pom.xml / build.gradle) found.")
-			execName = "mvn"
-			execArgs = append([]string{"test"}, extraArgs...)
-		}
-
-	case "c", "c++", "cpp":
-		if fileExists(filepath.Join(dest, "Makefile")) || fileExists(filepath.Join(dest, "makefile")) {
-			execName = "make"
-			execArgs = append([]string{"test"}, extraArgs...)
-		} else if fileExists(filepath.Join(dest, "CMakeLists.txt")) {
-			execName = "ctest"
-			execArgs = extraArgs
-		} else {
-			execName = "make"
-			execArgs = append([]string{"test"}, extraArgs...)
-		}
-
-	default:
-		red.Printf("Error: Unsupported language for testing: '%s'\n", lang)
+	execName, execArgs, err := resolveTestRunner(lang, dest, extraArgs)
+	if err != nil {
+		red.Println(err.Error())
 		os.Exit(1)
 	}
 
@@ -160,4 +89,86 @@ func runProjectTest(cmd *cobra.Command, args []string) {
 
 	fmt.Println("-------------------------------------------")
 	green.Printf("[SUCCESS] All tests passed successfully for %s project!\n", metadataYaml.Language)
+}
+
+func resolveTestRunner(lang string, dest string, extraArgs []string) (string, []string, error) {
+	var execName string
+	var execArgs []string
+
+	switch lang {
+	case "go", "golang":
+		execName = "go"
+		execArgs = append([]string{"test", "./..."}, extraArgs...)
+
+	case "node", "javascript", "js", "typescript", "ts", "next.js", "next", "vite":
+		var pkgMgr string
+		for _, pm := range []string{"npm", "pnpm", "yarn", "bun"} {
+			if _, err := exec.LookPath(pm); err == nil {
+				pkgMgr = pm
+				break
+			}
+		}
+		if pkgMgr == "" {
+			return "", nil, fmt.Errorf("Error: No Node package manager (npm/yarn/pnpm/bun) found in PATH")
+		}
+		execName = pkgMgr
+		execArgs = append([]string{"test"}, extraArgs...)
+
+	case "python", "python3", "py":
+		if _, err := exec.LookPath("pytest"); err == nil {
+			execName = "pytest"
+			execArgs = extraArgs
+		} else if _, err := exec.LookPath("python3"); err == nil {
+			execName = "python3"
+			execArgs = append([]string{"-m", "unittest", "discover"}, extraArgs...)
+		} else if _, err := exec.LookPath("python"); err == nil {
+			execName = "python"
+			execArgs = append([]string{"-m", "unittest", "discover"}, extraArgs...)
+		} else {
+			return "", nil, fmt.Errorf("Error: No Python interpreter or pytest found in PATH")
+		}
+
+	case "java":
+		if fileExists(filepath.Join(dest, "gradlew")) || fileExists(filepath.Join(dest, "gradlew.bat")) {
+			if fileExists(filepath.Join(dest, "gradlew.bat")) && runtime.GOOS == "windows" {
+				execName = "cmd.exe"
+				execArgs = append([]string{"/c", "gradlew.bat", "test"}, extraArgs...)
+			} else {
+				gradPath := filepath.Join(dest, "gradlew")
+				if abs, err := filepath.Abs(gradPath); err == nil {
+					execName = abs
+				} else {
+					execName = gradPath
+				}
+				execArgs = append([]string{"test"}, extraArgs...)
+			}
+		} else if fileExists(filepath.Join(dest, "pom.xml")) {
+			execName = "mvn"
+			execArgs = append([]string{"test"}, extraArgs...)
+		} else if fileExists(filepath.Join(dest, "build.gradle")) || fileExists(filepath.Join(dest, "build.gradle.kts")) {
+			execName = "gradle"
+			execArgs = append([]string{"test"}, extraArgs...)
+		} else {
+			color.Yellow("Warning: No standard Java build file (pom.xml / build.gradle) found.")
+			execName = "mvn"
+			execArgs = append([]string{"test"}, extraArgs...)
+		}
+
+	case "c", "c++", "cpp":
+		if fileExists(filepath.Join(dest, "Makefile")) || fileExists(filepath.Join(dest, "makefile")) {
+			execName = "make"
+			execArgs = append([]string{"test"}, extraArgs...)
+		} else if fileExists(filepath.Join(dest, "CMakeLists.txt")) {
+			execName = "ctest"
+			execArgs = extraArgs
+		} else {
+			execName = "make"
+			execArgs = append([]string{"test"}, extraArgs...)
+		}
+
+	default:
+		return "", nil, fmt.Errorf("Error: Unsupported language for testing: '%s'", lang)
+	}
+
+	return execName, execArgs, nil
 }

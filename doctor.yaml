@@ -54,3 +54,13 @@ checks:
     tests:
       - name: "pip Binary"
         command: ["pip3", "--version"]
+
+  - name: "Java"
+    key: "java"
+    description: "Java Development Kit (JDK)"
+    tests:
+      - name: "Java Runtime"
+        command: ["java", "-version"]
+      - name: "Java Compiler"
+        command: ["javac", "-version"]
+
