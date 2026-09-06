@@ -4,8 +4,6 @@ Copyright © 2026 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
@@ -17,9 +15,6 @@ var projectCmd = &cobra.Command{
 individual development projects — scaffolding language/template-specific
 starter structures and, eventually, tracking their dependencies, services,
 and environment configuration.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("project called")
-	},
 }
 
 func init() {
