@@ -17,6 +17,7 @@ type NovaMetadata struct {
 	Template    string `json:"template" yaml:"template"`
 	CreatedAt   string `json:"created" yaml:"created"`
 	NovaVersion string `json:"nova_version" yaml:"nova_version"`
+	Version     string `json:"version,omitempty" yaml:"version,omitempty"`
 }
 
 var projectDoctorCmd = &cobra.Command{
@@ -71,6 +72,10 @@ func runProjectDoctor(cmd *cobra.Command, args []string) {
 	fmt.Printf("Template     : %s\n", metadataYaml.Template)
 	fmt.Printf("Created At   : %s\n", metadataYaml.CreatedAt)
 	fmt.Printf("Nova Version : %s\n", metadataYaml.NovaVersion)
+	pinnedVer := strings.TrimSpace(metadataYaml.Version)
+	if pinnedVer != "" {
+		fmt.Printf("Pinned Ver   : %s\n", pinnedVer)
+	}
 	fmt.Println("---------------------------------------------------")
 
 	passed := 0
@@ -220,6 +225,26 @@ func runProjectDoctor(cmd *cobra.Command, args []string) {
 			warnings++
 		}
 
+	case "rust", "rustc":
+		// Check rustc compiler
+		if ver, ok := getToolVersion("rustc", "--version"); ok {
+			green.Printf("  [SUCCESS] Rust compiler: %s\n", ver)
+			passed++
+		} else {
+			red.Println("  [FAILED] Rust compiler ('rustc') not found in PATH")
+			failed++
+		}
+
+		// Check Cargo manifest
+		cargoPath := filepath.Join(dest, "Cargo.toml")
+		if fileExists(cargoPath) {
+			green.Println("  [SUCCESS] Cargo.toml file found")
+			passed++
+		} else {
+			yellow.Println("  [WARNING] Cargo.toml missing in project root")
+			warnings++
+		}
+
 	case "java":
 		// Check java & javac
 		if ver, ok := getToolVersion("java", "-version"); ok {
@@ -307,6 +332,23 @@ func runProjectDoctor(cmd *cobra.Command, args []string) {
 		cyan.Printf("  No extra checks registered for language '%s'\n", lang)
 	}
 
+	// 3. Version Drift Check (if version is pinned in .nova.yaml)
+	if pinnedVer != "" {
+		cyan.Printf("\nChecking toolchain version alignment (pinned: %s):\n", pinnedVer)
+		rawActive, parsedActive, found := getActiveLanguageVersion(lang)
+		if !found {
+			yellow.Printf("  [WARNING] Cannot check version drift: toolchain for '%s' not found in PATH\n", lang)
+			warnings++
+		} else if isVersionMatched(parsedActive, pinnedVer) {
+			green.Printf("  [SUCCESS] Toolchain version matched pinned version (%s)\n", pinnedVer)
+			passed++
+		} else {
+			yellow.Printf("  [WARNING] Toolchain version mismatch for %s: pinned %s vs active %s\n", lang, pinnedVer, rawActive)
+			fmt.Printf("            To fix: %s\n", getVersionFixAdvice(lang, pinnedVer))
+			warnings++
+		}
+	}
+
 	fmt.Println("\n---------------------------------------------------")
 	if failed > 0 {
 		red.Printf("Project Doctor finished: %d passed, %d warning(s), %d failed\n", passed, warnings, failed)
@@ -342,4 +384,89 @@ func getToolVersion(name string, flag string) (string, bool) {
 		return strings.TrimSpace(lines[0]), true
 	}
 	return "", true
+}
+
+// getActiveLanguageVersion queries the active version string for a given language.
+func getActiveLanguageVersion(lang string) (raw string, parsed string, ok bool) {
+	switch lang {
+	case "go", "golang":
+		if ver, found := getToolVersion("go", "version"); found {
+			return ver, parseVersionString(ver, "go"), true
+		}
+	case "node", "javascript", "js", "typescript", "ts", "next.js", "next", "vite":
+		if ver, found := getToolVersion("node", "-v"); found {
+			return ver, parseVersionString(ver, "node"), true
+		}
+	case "python", "python3", "py":
+		if ver, found := getToolVersion("python3", "--version"); found {
+			return ver, parseVersionString(ver, "python"), true
+		}
+		if ver, found := getToolVersion("python", "--version"); found {
+			return ver, parseVersionString(ver, "python"), true
+		}
+	case "rust", "rustc":
+		if ver, found := getToolVersion("rustc", "--version"); found {
+			return ver, parseVersionString(ver, "rust"), true
+		}
+	}
+	return "", "", false
+}
+
+// parseVersionString extracts a clean version string from raw tool version output.
+func parseVersionString(raw string, lang string) string {
+	raw = strings.TrimSpace(raw)
+	switch lang {
+	case "go", "golang":
+		for _, part := range strings.Fields(raw) {
+			if strings.HasPrefix(part, "go1.") || strings.HasPrefix(part, "go2.") {
+				return strings.TrimPrefix(part, "go")
+			}
+		}
+		if strings.HasPrefix(raw, "go") {
+			return strings.TrimPrefix(raw, "go")
+		}
+		return raw
+	case "node", "javascript", "js", "typescript", "ts", "next.js", "next", "vite":
+		return strings.TrimPrefix(raw, "v")
+	case "python", "python3", "py":
+		return strings.TrimPrefix(raw, "Python ")
+	case "rust", "rustc":
+		parts := strings.Fields(raw)
+		if len(parts) >= 2 && parts[0] == "rustc" {
+			return parts[1]
+		}
+		return raw
+	default:
+		return strings.TrimPrefix(raw, "v")
+	}
+}
+
+// isVersionMatched checks if the active version matches the pinned version.
+func isVersionMatched(active string, pinned string) bool {
+	normActive := strings.TrimPrefix(strings.TrimSpace(active), "v")
+	normPinned := strings.TrimPrefix(strings.TrimSpace(pinned), "v")
+	if normActive == normPinned {
+		return true
+	}
+	if strings.HasPrefix(normActive, normPinned+".") || strings.HasPrefix(normActive, normPinned) {
+		return true
+	}
+	return false
+}
+
+// getVersionFixAdvice returns the community version manager command to fix a version mismatch.
+func getVersionFixAdvice(lang string, pinnedVersion string) string {
+	pinned := strings.TrimSpace(pinnedVersion)
+	switch lang {
+	case "node", "javascript", "js", "typescript", "ts", "next.js", "next", "vite":
+		return fmt.Sprintf("nvm install %s && nvm use %s", pinned, pinned)
+	case "python", "python3", "py":
+		return fmt.Sprintf("pyenv install %s && pyenv local %s", pinned, pinned)
+	case "go", "golang":
+		return fmt.Sprintf("g use %s (or goenv local %s)", pinned, pinned)
+	case "rust", "rustc":
+		return fmt.Sprintf("rustup override set %s", pinned)
+	default:
+		return fmt.Sprintf("Use community version manager to install and set %s", pinned)
+	}
 }

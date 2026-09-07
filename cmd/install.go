@@ -35,15 +35,21 @@ type InstallConfig struct {
 	Tools []InstallTool `json:"tools" yaml:"tools"`
 }
 
-// installCmd is the parent command for tool installation.
+// installCmd is the parent command for tool and package installation.
 var installCmd = &cobra.Command{
-	Use:   "install <tool>",
-	Short: "Install a development tool via apt",
-	Long: `install looks up the given tool name in Nova's embedded registry and
-installs the corresponding apt package. This is a thin convenience wrapper for
-Debian-based systems (GalactOS) — not a full package manager.
+	Use:   "install <package...>",
+	Short: "Install system packages via apt (rebranded package manager)",
+	Long: `install is GalactOS's rebranded package installation command powered by apt under the hood.
 
-Use 'nova install list' to see all available tools and their install status.`,
+If the package matches a shortcut in Nova's tool registry (e.g. 'go', 'java', 'docker'),
+it automatically resolves to the corresponding apt package name (e.g. 'golang', 'default-jdk', 'docker.io').
+Otherwise, the package name is passed directly to 'apt install'.
+
+Examples:
+  nova install go            — installs golang via apt
+  nova install htop          — installs htop directly via apt
+  nova install git curl vim  — installs multiple packages via apt
+  nova install list          — list predefined tool shortcuts and install status`,
 	Args: cobra.MinimumNArgs(1),
 	Run:  runInstall,
 }
@@ -53,6 +59,23 @@ var installListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all tools in the install registry and their install status",
 	Run:   runInstallList,
+}
+
+type installTarget struct {
+	Name        string
+	AptPackage  string
+	Executables []string
+}
+
+// resolveAptPackage resolves a tool key or package name to its target apt package and metadata.
+func resolveAptPackage(arg string, tools []InstallTool) (displayName string, aptPackage string, executables []string) {
+	toolKey := strings.ToLower(arg)
+	for _, t := range tools {
+		if strings.EqualFold(t.Key, toolKey) || strings.EqualFold(t.Name, toolKey) {
+			return t.Name, t.AptPackage, t.Executables
+		}
+	}
+	return arg, arg, []string{arg}
 }
 
 func runInstall(cmd *cobra.Command, args []string) {
@@ -67,37 +90,38 @@ func runInstall(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	toolKey := strings.ToLower(args[0])
-
 	tools := loadInstallRegistry()
-	var target *InstallTool
-	for i, t := range tools {
-		if strings.EqualFold(t.Key, toolKey) || strings.EqualFold(t.Name, toolKey) {
-			target = &tools[i]
-			break
+
+	var targets []installTarget
+	var aptPackages []string
+
+	for _, arg := range args {
+		name, aptPkg, exes := resolveAptPackage(arg, tools)
+
+		allInstalled := len(exes) > 0
+		for _, exe := range exes {
+			if _, err := exec.LookPath(exe); err != nil {
+				allInstalled = false
+				break
+			}
 		}
+
+		if allInstalled {
+			green.Printf("✓ %s is already installed\n", name)
+			continue
+		}
+
+		targets = append(targets, installTarget{
+			Name:        name,
+			AptPackage:  aptPkg,
+			Executables: exes,
+		})
+		aptPackages = append(aptPackages, aptPkg)
 	}
 
-	if target == nil {
-		red.Printf("Error: unknown tool '%s'\n", toolKey)
-		fmt.Println("Run 'nova install list' to see available tools.")
-		os.Exit(1)
-	}
-
-	// Check if already installed
-	allInstalled := true
-	for _, exe := range target.Executables {
-		if _, err := exec.LookPath(exe); err != nil {
-			allInstalled = false
-			break
-		}
-	}
-	if allInstalled {
-		green.Printf("✓ %s is already installed\n", target.Name)
+	if len(aptPackages) == 0 {
 		return
 	}
-
-	cyan.Printf("Installing %s (apt package: %s)...\n", target.Name, target.AptPackage)
 
 	// Check that apt exists
 	if _, err := exec.LookPath("apt"); err != nil {
@@ -105,37 +129,44 @@ func runInstall(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
+	cyan.Printf("Installing package(s) via apt: %s...\n", strings.Join(aptPackages, ", "))
+
 	// Check that sudo exists
 	if _, err := exec.LookPath("sudo"); err != nil {
 		yellow.Println("Warning: 'sudo' not found — attempting install without sudo...")
-		runAptInstall("apt", target.AptPackage)
-		return
+		runAptInstall("apt", aptPackages)
+	} else {
+		runAptInstall("sudo", aptPackages)
 	}
-
-	runAptInstall("sudo", target.AptPackage)
 
 	// Verify
-	allInstalled = true
-	for _, exe := range target.Executables {
-		if _, err := exec.LookPath(exe); err != nil {
-			allInstalled = false
+	for _, target := range targets {
+		allInstalled := len(target.Executables) > 0
+		for _, exe := range target.Executables {
+			if _, err := exec.LookPath(exe); err != nil {
+				allInstalled = false
+				break
+			}
 		}
-	}
-	if allInstalled {
-		green.Printf("✓ %s installed successfully\n", target.Name)
-	} else {
-		yellow.Printf("⚠ apt completed but some executables for %s are still not in PATH\n", target.Name)
+		if allInstalled {
+			green.Printf("✓ %s installed successfully\n", target.Name)
+		} else {
+			yellow.Printf("⚠ apt completed, but executable(s) for %s are still not in PATH\n", target.Name)
+		}
 	}
 }
 
-func runAptInstall(sudoOrApt string, aptPackage string) {
+func runAptInstall(sudoOrApt string, aptPackages []string) {
 	red := color.New(color.FgRed)
+
+	aptArgs := append([]string{"install", "-y"}, aptPackages...)
 
 	var aptCmd *exec.Cmd
 	if sudoOrApt == "sudo" {
-		aptCmd = exec.Command("sudo", "apt", "install", "-y", aptPackage)
+		cmdArgs := append([]string{"apt"}, aptArgs...)
+		aptCmd = exec.Command("sudo", cmdArgs...)
 	} else {
-		aptCmd = exec.Command("apt", "install", "-y", aptPackage)
+		aptCmd = exec.Command("apt", aptArgs...)
 	}
 	aptCmd.Stdout = os.Stdout
 	aptCmd.Stderr = os.Stderr
