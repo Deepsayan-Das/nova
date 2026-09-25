@@ -1,19 +1,19 @@
 Origin: GalactOS
 Label: GalactOS
 Codename: stable
-Date: Fri, 25 Sep 2026 05:15:01 UTC
+Date: Fri, 25 Sep 2026 05:41:08 UTC
 Architectures: amd64
 Components: main
 Description: GalactOS package repository
 MD5Sum:
- fe3073d415765ed206e6aa5a3691d7f6 533 main/binary-amd64/Packages
- 15ffcc05f9fa5c6c991bba1d86464711 392 main/binary-amd64/Packages.gz
+ 79386c35bfa39c732b3e9b2a4a5fb187 536 main/binary-amd64/Packages
+ 2fdf5bd710a6378b052df31ff1af469e 389 main/binary-amd64/Packages.gz
  a4e09956f5e8a03491a7c4227acda586 110 main/binary-amd64/Release
 SHA1:
- d7ab9f087e787aced29c9f585b656d8d556d139c 533 main/binary-amd64/Packages
- 1d566ad0b2208883b1b5b4986f9f950cea1dcf11 392 main/binary-amd64/Packages.gz
+ fd7d367f8afb140e5eb648617843f09e08addb1e 536 main/binary-amd64/Packages
+ 4b8394e736e0675921faffe87ccbd0f25c2ee6f8 389 main/binary-amd64/Packages.gz
  cf2f2a389619a9a0c4fb283c85aa997f053b0fcc 110 main/binary-amd64/Release
 SHA256:
- a1488088676483e61c6793a81e8604f31e234e4af40f790f4c9d9be5ea82f3aa 533 main/binary-amd64/Packages
- 96bea98943f5741db7b5937a59ddb75886c892ba8468ee23cfd17337c173a9aa 392 main/binary-amd64/Packages.gz
+ 880aec45d5e4a96e7c4c0ba810858fc0b55491dc0d1fe86925213bffe471d372 536 main/binary-amd64/Packages
+ 99f06eded8ae0a4fcc7b7a84e19bf42391cb77ad40767b99c042bd6921f14651 389 main/binary-amd64/Packages.gz
  48b72b528ea85ac6a316ad5f227f9b75804a060d81d46dd60f3ba19f49cfe202 110 main/binary-amd64/Release
