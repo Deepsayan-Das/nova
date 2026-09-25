@@ -33,6 +33,12 @@ go.work.sum
 
 # Compiled binaries
 nova
+nova_bin
+
+# Generated Debian package build artifacts
+*.deb
+dist/
+nova_*_amd64/
 
 # Generated test project folders
 demo/
