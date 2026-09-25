@@ -1,0 +1,7 @@
+Origin: GalactOS
+Label: GalactOS
+Codename: stable
+Architectures: amd64
+Components: main
+Description: GalactOS package repository
+SignWith: 0F9A6778FF703236DC900E185CF06F7D8C492501

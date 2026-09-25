@@ -1,0 +1,19 @@
+Origin: GalactOS
+Label: GalactOS
+Codename: stable
+Date: Fri, 25 Sep 2026 05:15:01 UTC
+Architectures: amd64
+Components: main
+Description: GalactOS package repository
+MD5Sum:
+ fe3073d415765ed206e6aa5a3691d7f6 533 main/binary-amd64/Packages
+ 15ffcc05f9fa5c6c991bba1d86464711 392 main/binary-amd64/Packages.gz
+ a4e09956f5e8a03491a7c4227acda586 110 main/binary-amd64/Release
+SHA1:
+ d7ab9f087e787aced29c9f585b656d8d556d139c 533 main/binary-amd64/Packages
+ 1d566ad0b2208883b1b5b4986f9f950cea1dcf11 392 main/binary-amd64/Packages.gz
+ cf2f2a389619a9a0c4fb283c85aa997f053b0fcc 110 main/binary-amd64/Release
+SHA256:
+ a1488088676483e61c6793a81e8604f31e234e4af40f790f4c9d9be5ea82f3aa 533 main/binary-amd64/Packages
+ 96bea98943f5741db7b5937a59ddb75886c892ba8468ee23cfd17337c173a9aa 392 main/binary-amd64/Packages.gz
+ 48b72b528ea85ac6a316ad5f227f9b75804a060d81d46dd60f3ba19f49cfe202 110 main/binary-amd64/Release

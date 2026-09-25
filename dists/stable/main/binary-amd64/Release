@@ -1,0 +1,5 @@
+Component: main
+Origin: GalactOS
+Label: GalactOS
+Architecture: amd64
+Description: GalactOS package repository
