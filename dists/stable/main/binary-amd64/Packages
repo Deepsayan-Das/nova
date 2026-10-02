@@ -1,14 +1,14 @@
 Package: nova
-Version: 1.0.0-2
+Version: 2.0.0-1
 Architecture: amd64
 Maintainer: Deepsayan Das <deepsayandas274@gmail.com>
 Priority: optional
 Section: utils
-Filename: pool/main/n/nova/nova_1.0.0-2_amd64.deb
-Size: 3715798
-SHA256: 2dc3ba16df1f7a527d480b1dfbf07c16d179cd8bd69dcdfbba77455ed39cc404
-SHA1: 89c8e7739e468a68db59836d30556da01e5121d2
-MD5sum: d94d6a08af9de69bcf743973efaa86d3
+Filename: pool/main/n/nova/nova_2.0.0-1_amd64.deb
+Size: 3813288
+SHA256: e8dda3a4f6ad283b2a750312282821f47960aeff21670b7bbc41143c17c7ced3
+SHA1: 4b1041f8f62f654a3d13d9f3d9cf9317a1dadbb8
+MD5sum: 2ec56509ec3ea6a119cd069b34bda374
 Description: GalactOS CLI tool for project development and container management.
  Nova provides streamlined environment management and project orchestration for GalactOS.
 
