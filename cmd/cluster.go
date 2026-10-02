@@ -4,8 +4,6 @@ Copyright © 2026 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
@@ -13,9 +11,10 @@ import (
 var clusterCmd = &cobra.Command{
 	Use:   "cluster",
 	Short: "Manage and generate Kubernetes cluster resources",
-	Long:  `Cluster commands allow you to generate Kubernetes manifests and manage cluster configurations.`,
+	Long: `Cluster commands allow you to generate Kubernetes manifests, Helm charts,
+Kustomize overlays, and manage cluster deployments via kubectl.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("cluster called. Use 'nova cluster manifest' to generate Kubernetes manifests.")
+		cmd.Help()
 	},
 }
 

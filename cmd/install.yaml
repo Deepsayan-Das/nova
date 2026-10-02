@@ -14,6 +14,12 @@ tools:
     executables: ["docker"]
     apt_package: "docker.io"
 
+  - name: "Podman"
+    key: "podman"
+    description: "Podman container engine"
+    executables: ["podman"]
+    apt_package: "podman"
+
   - name: "Git"
     key: "git"
     description: "Git version control system"

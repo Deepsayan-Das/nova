@@ -67,6 +67,10 @@ func matchLanguage(reqLang, tmplLang string) bool {
 		return tmpl == "c++" || tmpl == "cpp"
 	case "py", "python":
 		return tmpl == "python" || tmpl == "py"
+	case "rs", "rust":
+		return tmpl == "rust" || tmpl == "rs"
+	case "ts", "typescript":
+		return tmpl == "node" || tmpl == "typescript" || tmpl == "ts"
 	}
 	return false
 }

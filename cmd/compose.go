@@ -20,11 +20,25 @@ type ServiceConfig struct {
 	Ports       []string          `yaml:"ports,omitempty"`
 	Environment map[string]string `yaml:"environment,omitempty"`
 	DependsOn   []string          `yaml:"depends_on,omitempty"`
+	Volumes     []string          `yaml:"volumes,omitempty"`
+	Networks    []string          `yaml:"networks,omitempty"`
+	Restart     string            `yaml:"restart,omitempty"`
+	Healthcheck *HealthcheckConfig `yaml:"healthcheck,omitempty"`
+	Command     string            `yaml:"command,omitempty"`
+}
+
+type HealthcheckConfig struct {
+	Test     []string `yaml:"test"`
+	Interval string   `yaml:"interval"`
+	Timeout  string   `yaml:"timeout"`
+	Retries  int      `yaml:"retries"`
 }
 
 type ComposeConfig struct {
-	Version  string                   `yaml:"version"`
-	Services map[string]ServiceConfig `yaml:"services"`
+	Version  string                     `yaml:"version"`
+	Services map[string]ServiceConfig   `yaml:"services"`
+	Volumes  map[string]interface{}     `yaml:"volumes,omitempty"`
+	Networks map[string]interface{}     `yaml:"networks,omitempty"`
 }
 
 // GenerateCompose generates valid docker-compose YAML from ComposeConfig
@@ -172,6 +186,53 @@ var composeCmd = &cobra.Command{
 				}, &deps)
 				if err == nil && len(deps) > 0 {
 					svc.DependsOn = deps
+				}
+			}
+
+			// Volumes
+			var volumesStr string
+			err = survey.AskOne(&survey.Input{
+				Message: "Volume mounts (comma-separated host:container, e.g. ./data:/var/lib/data, leave blank if none):",
+			}, &volumesStr)
+			if err == nil && strings.TrimSpace(volumesStr) != "" {
+				for _, v := range strings.Split(volumesStr, ",") {
+					v = strings.TrimSpace(v)
+					if v != "" {
+						svc.Volumes = append(svc.Volumes, v)
+					}
+				}
+			}
+
+			// Restart policy
+			var restart string
+			err = survey.AskOne(&survey.Select{
+				Message: "Restart policy:",
+				Options: []string{"no", "always", "on-failure", "unless-stopped"},
+				Default: "unless-stopped",
+			}, &restart)
+			if err == nil && restart != "no" {
+				svc.Restart = restart
+			}
+
+			// Healthcheck
+			var addHealth bool
+			err = survey.AskOne(&survey.Confirm{
+				Message: "Add healthcheck?",
+				Default: false,
+			}, &addHealth)
+			if err == nil && addHealth {
+				var healthCmd string
+				survey.AskOne(&survey.Input{
+					Message: "Healthcheck command (e.g. curl -f http://localhost:3000/health):",
+					Default: "curl -f http://localhost:3000/health || exit 1",
+				}, &healthCmd)
+				if strings.TrimSpace(healthCmd) != "" {
+					svc.Healthcheck = &HealthcheckConfig{
+						Test:     []string{"CMD-SHELL", healthCmd},
+						Interval: "30s",
+						Timeout:  "10s",
+						Retries:  3,
+					}
 				}
 			}
 

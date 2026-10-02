@@ -5,23 +5,21 @@ Copyright © 2026 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
 // containerCmd represents the container command
 var containerCmd = &cobra.Command{
 	Use:   "container",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Manage containers, images, and Dockerfiles",
+	Long: `container provides subcommands for building, running, and managing containers
+using Podman as the container runtime. Includes:
+  - dockerfile/dockerignore generation
+  - docker-compose.yml generation
+  - container lifecycle management (build, run, ps, stop, rm, exec, logs)
+  - image management (images, rmi)`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("container called")
+		cmd.Help()
 	},
 }
 

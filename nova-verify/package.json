@@ -1,0 +1,1 @@
+{"name":"nova-verify-test","scripts":{"start":"node index.js"}}

@@ -48,6 +48,7 @@ func GenerateDockerfile(cfg DockerfileConfig) string {
 			sb.WriteString("RUN CGO_ENABLED=0 GOOS=linux go build -o app .\n\n")
 
 			sb.WriteString("# Runtime stage\nFROM alpine:latest\n")
+			sb.WriteString("RUN apk --no-cache add ca-certificates\n")
 			sb.WriteString(fmt.Sprintf("WORKDIR %s\n", cfg.WorkDir))
 			sb.WriteString(fmt.Sprintf("COPY --from=builder %s/app ./app\n", cfg.WorkDir))
 			if cfg.Port != "" {
@@ -68,14 +69,14 @@ func GenerateDockerfile(cfg DockerfileConfig) string {
 			sb.WriteString(fmt.Sprintf("# Build stage\nFROM node:%s AS builder\n", version))
 			sb.WriteString(fmt.Sprintf("WORKDIR %s\n", cfg.WorkDir))
 			sb.WriteString("COPY package*.json ./\n")
-			sb.WriteString("RUN npm install\n")
+			sb.WriteString("RUN npm ci\n")
 			sb.WriteString("COPY . .\n")
 			sb.WriteString("RUN npm run build\n\n")
 
 			sb.WriteString(fmt.Sprintf("# Runtime stage\nFROM node:%s-alpine\n", version))
 			sb.WriteString(fmt.Sprintf("WORKDIR %s\n", cfg.WorkDir))
 			sb.WriteString("COPY package*.json ./\n")
-			sb.WriteString("RUN npm install --only=production\n")
+			sb.WriteString("RUN npm ci --only=production\n")
 			sb.WriteString(fmt.Sprintf("COPY --from=builder %s/dist ./dist\n", cfg.WorkDir))
 			if cfg.Port != "" {
 				sb.WriteString(fmt.Sprintf("EXPOSE %s\n", cfg.Port))
@@ -84,6 +85,81 @@ func GenerateDockerfile(cfg DockerfileConfig) string {
 				sb.WriteString(fmt.Sprintf("CMD [%s]\n", formatCmd(cfg.EntryCmd)))
 			} else {
 				sb.WriteString("CMD [\"npm\", \"start\"]\n")
+			}
+			return sb.String()
+
+		case "rust":
+			version := cfg.Version
+			if version == "" {
+				version = "1-slim"
+			}
+			sb.WriteString(fmt.Sprintf("# Build stage\nFROM rust:%s AS builder\n", version))
+			sb.WriteString(fmt.Sprintf("WORKDIR %s\n", cfg.WorkDir))
+			sb.WriteString("COPY Cargo.toml Cargo.lock ./\n")
+			sb.WriteString("# Create dummy main for dependency caching\n")
+			sb.WriteString("RUN mkdir src && echo 'fn main() {}' > src/main.rs && cargo build --release && rm -rf src\n")
+			sb.WriteString("COPY . .\n")
+			sb.WriteString("RUN cargo build --release\n\n")
+
+			sb.WriteString("# Runtime stage\nFROM debian:bookworm-slim\n")
+			sb.WriteString("RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*\n")
+			sb.WriteString(fmt.Sprintf("WORKDIR %s\n", cfg.WorkDir))
+			sb.WriteString(fmt.Sprintf("COPY --from=builder %s/target/release/app ./app\n", cfg.WorkDir))
+			if cfg.Port != "" {
+				sb.WriteString(fmt.Sprintf("EXPOSE %s\n", cfg.Port))
+			}
+			if cfg.EntryCmd != "" {
+				sb.WriteString(fmt.Sprintf("CMD [%s]\n", formatCmd(cfg.EntryCmd)))
+			} else {
+				sb.WriteString("CMD [\"./app\"]\n")
+			}
+			return sb.String()
+
+		case "java":
+			version := cfg.Version
+			if version == "" {
+				version = "21"
+			}
+			sb.WriteString(fmt.Sprintf("# Build stage\nFROM eclipse-temurin:%s-jdk AS builder\n", version))
+			sb.WriteString(fmt.Sprintf("WORKDIR %s\n", cfg.WorkDir))
+			sb.WriteString("COPY . .\n")
+			sb.WriteString("RUN ./gradlew build -x test 2>/dev/null || mvn package -DskipTests 2>/dev/null || echo 'Build with your build tool'\n\n")
+
+			sb.WriteString(fmt.Sprintf("# Runtime stage\nFROM eclipse-temurin:%s-jre-alpine\n", version))
+			sb.WriteString(fmt.Sprintf("WORKDIR %s\n", cfg.WorkDir))
+			sb.WriteString(fmt.Sprintf("COPY --from=builder %s/build/libs/*.jar ./app.jar\n", cfg.WorkDir))
+			if cfg.Port != "" {
+				sb.WriteString(fmt.Sprintf("EXPOSE %s\n", cfg.Port))
+			}
+			if cfg.EntryCmd != "" {
+				sb.WriteString(fmt.Sprintf("CMD [%s]\n", formatCmd(cfg.EntryCmd)))
+			} else {
+				sb.WriteString("CMD [\"java\", \"-jar\", \"app.jar\"]\n")
+			}
+			return sb.String()
+
+		case "dotnet":
+			version := cfg.Version
+			if version == "" {
+				version = "8.0"
+			}
+			sb.WriteString(fmt.Sprintf("# Build stage\nFROM mcr.microsoft.com/dotnet/sdk:%s AS builder\n", version))
+			sb.WriteString(fmt.Sprintf("WORKDIR %s\n", cfg.WorkDir))
+			sb.WriteString("COPY *.csproj ./\n")
+			sb.WriteString("RUN dotnet restore\n")
+			sb.WriteString("COPY . .\n")
+			sb.WriteString("RUN dotnet publish -c Release -o /out\n\n")
+
+			sb.WriteString(fmt.Sprintf("# Runtime stage\nFROM mcr.microsoft.com/dotnet/aspnet:%s-alpine\n", version))
+			sb.WriteString(fmt.Sprintf("WORKDIR %s\n", cfg.WorkDir))
+			sb.WriteString("COPY --from=builder /out ./\n")
+			if cfg.Port != "" {
+				sb.WriteString(fmt.Sprintf("EXPOSE %s\n", cfg.Port))
+			}
+			if cfg.EntryCmd != "" {
+				sb.WriteString(fmt.Sprintf("CMD [%s]\n", formatCmd(cfg.EntryCmd)))
+			} else {
+				sb.WriteString("CMD [\"dotnet\", \"app.dll\"]\n")
 			}
 			return sb.String()
 
@@ -116,13 +192,22 @@ func GenerateDockerfile(cfg DockerfileConfig) string {
 	switch cfg.BaseImage {
 	case "node":
 		sb.WriteString("COPY package*.json ./\n")
-		sb.WriteString("RUN npm install\n\n")
+		sb.WriteString("RUN npm ci\n\n")
 	case "python":
 		sb.WriteString("COPY requirements.txt ./\n")
-		sb.WriteString("RUN pip install -r requirements.txt\n\n")
+		sb.WriteString("RUN pip install --no-cache-dir -r requirements.txt\n\n")
 	case "go":
 		sb.WriteString("COPY go.mod go.sum ./\n")
 		sb.WriteString("RUN go mod download\n\n")
+	case "rust":
+		sb.WriteString("COPY Cargo.toml Cargo.lock ./\n")
+		sb.WriteString("RUN mkdir src && echo 'fn main() {}' > src/main.rs && cargo build --release && rm -rf src\n\n")
+	case "java":
+		sb.WriteString("COPY . .\n")
+		sb.WriteString("RUN ./gradlew build -x test 2>/dev/null || mvn package -DskipTests 2>/dev/null\n\n")
+	case "dotnet":
+		sb.WriteString("COPY *.csproj ./\n")
+		sb.WriteString("RUN dotnet restore\n\n")
 	}
 	sb.WriteString("COPY . .\n\n")
 	if cfg.Port != "" {
@@ -138,20 +223,20 @@ func GenerateDockerfile(cfg DockerfileConfig) string {
 // dockerfileCmd represents the dockerfile command
 var dockerfileCmd = &cobra.Command{
 	Use:   "dockerfile",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Generate a Dockerfile for your project",
+	Long: `dockerfile interactively generates a production-ready Dockerfile tailored to
+your project language. Supports Go, Node.js, Python, Rust, Java, and .NET (C#)
+with both single-stage and multi-stage build options.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+Examples:
+  nova container dockerfile    — interactive Dockerfile generation`,
 	Run: func(cmd *cobra.Command, args []string) {
 		var qs = []*survey.Question{
 			{
 				Name: "base_image",
 				Prompt: &survey.Select{
 					Message: "Choose a base image:",
-					Options: []string{"node", "python", "go", "custom"},
+					Options: []string{"node", "python", "go", "rust", "java", "dotnet", "custom"},
 				},
 			},
 			{

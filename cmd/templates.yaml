@@ -311,3 +311,377 @@ templates:
 
           clean:
           	rm -f *.o
+
+  - language: rust
+    name: cli
+    dirs:
+      - src
+    files:
+      - path: Cargo.toml
+        content: |
+          [package]
+          name = "myproject"
+          version = "0.1.0"
+          edition = "2021"
+
+          [dependencies]
+          clap = { version = "4", features = ["derive"] }
+      - path: src/main.rs
+        content: |
+          use clap::Parser;
+
+          #[derive(Parser, Debug)]
+          #[command(author, version, about, long_about = None)]
+          struct Args {
+              /// Name to greet
+              #[arg(short, long, default_value = "World")]
+              name: String,
+          }
+
+          fn main() {
+              let args = Args::parse();
+              println!("Hello, {}!", args.name);
+          }
+      - path: .gitignore
+        content: |
+          /target
+          Cargo.lock
+
+  - language: rust
+    name: api
+    dirs:
+      - src
+    files:
+      - path: Cargo.toml
+        content: |
+          [package]
+          name = "myapi"
+          version = "0.1.0"
+          edition = "2021"
+
+          [dependencies]
+          actix-web = "4"
+          serde = { version = "1", features = ["derive"] }
+          serde_json = "1"
+          tokio = { version = "1", features = ["full"] }
+      - path: src/main.rs
+        content: |
+          use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
+          use serde::Serialize;
+
+          #[derive(Serialize)]
+          struct HealthResponse {
+              status: String,
+          }
+
+          #[get("/")]
+          async fn index() -> impl Responder {
+              HttpResponse::Ok().json(serde_json::json!({"message": "Hello from Rust API!"}))
+          }
+
+          #[get("/health")]
+          async fn health() -> impl Responder {
+              HttpResponse::Ok().json(HealthResponse { status: "ok".to_string() })
+          }
+
+          #[actix_web::main]
+          async fn main() -> std::io::Result<()> {
+              println!("Server running on http://localhost:8080");
+              HttpServer::new(|| {
+                  App::new()
+                      .service(index)
+                      .service(health)
+              })
+              .bind(("0.0.0.0", 8080))?
+              .run()
+              .await
+          }
+      - path: .gitignore
+        content: |
+          /target
+          Cargo.lock
+
+  - language: python
+    name: flask
+    dirs:
+      - app
+      - app/routes
+      - tests
+    files:
+      - path: app/__init__.py
+        content: |
+          from flask import Flask
+
+          def create_app():
+              app = Flask(__name__)
+
+              from app.routes.main import main_bp
+              app.register_blueprint(main_bp)
+
+              return app
+      - path: app/routes/__init__.py
+        content: ""
+      - path: app/routes/main.py
+        content: |
+          from flask import Blueprint, jsonify
+
+          main_bp = Blueprint('main', __name__)
+
+          @main_bp.route('/')
+          def index():
+              return jsonify(message="Hello from Flask!")
+
+          @main_bp.route('/health')
+          def health():
+              return jsonify(status="ok")
+      - path: run.py
+        content: |
+          from app import create_app
+
+          app = create_app()
+
+          if __name__ == '__main__':
+              app.run(host='0.0.0.0', port=5000, debug=True)
+      - path: requirements.txt
+        content: |
+          flask>=3.0.0
+          gunicorn>=21.2.0
+      - path: tests/__init__.py
+        content: ""
+      - path: tests/test_app.py
+        content: |
+          import pytest
+          from app import create_app
+
+          @pytest.fixture
+          def client():
+              app = create_app()
+              app.config['TESTING'] = True
+              with app.test_client() as client:
+                  yield client
+
+          def test_health(client):
+              rv = client.get('/health')
+              assert rv.status_code == 200
+              assert rv.json['status'] == 'ok'
+      - path: .gitignore
+        content: |
+          __pycache__/
+          *.pyc
+          .venv/
+          venv/
+          .env
+
+  - language: python
+    name: django
+    dirs:
+      - myproject
+      - myproject/core
+    files:
+      - path: manage.py
+        content: |
+          #!/usr/bin/env python
+          import os
+          import sys
+
+          def main():
+              os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myproject.settings')
+              try:
+                  from django.core.management import execute_from_command_line
+              except ImportError as exc:
+                  raise ImportError(
+                      "Couldn't import Django."
+                  ) from exc
+              execute_from_command_line(sys.argv)
+
+          if __name__ == '__main__':
+              main()
+      - path: requirements.txt
+        content: |
+          django>=5.0
+          djangorestframework>=3.14.0
+          gunicorn>=21.2.0
+      - path: .gitignore
+        content: |
+          __pycache__/
+          *.pyc
+          .venv/
+          venv/
+          db.sqlite3
+          .env
+          staticfiles/
+
+  - language: go
+    name: microservices
+    dirs:
+      - services/gateway
+      - services/users
+      - services/orders
+      - pkg/config
+      - pkg/logger
+      - proto
+      - deployments/k8s
+      - deployments/docker
+    files:
+      - path: go.mod
+        content: |
+          module myproject
+
+          go 1.22
+      - path: services/gateway/main.go
+        content: |
+          package main
+
+          import (
+          	"fmt"
+          	"net/http"
+          )
+
+          func main() {
+          	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+          		fmt.Fprintln(w, `{"service":"gateway","status":"ok"}`)
+          	})
+          	fmt.Println("Gateway listening on :8080...")
+          	_ = http.ListenAndServe(":8080", nil)
+          }
+      - path: services/users/main.go
+        content: |
+          package main
+
+          import (
+          	"fmt"
+          	"net/http"
+          )
+
+          func main() {
+          	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+          		fmt.Fprintln(w, `{"service":"users","status":"ok"}`)
+          	})
+          	fmt.Println("Users service listening on :8081...")
+          	_ = http.ListenAndServe(":8081", nil)
+          }
+      - path: services/orders/main.go
+        content: |
+          package main
+
+          import (
+          	"fmt"
+          	"net/http"
+          )
+
+          func main() {
+          	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+          		fmt.Fprintln(w, `{"service":"orders","status":"ok"}`)
+          	})
+          	fmt.Println("Orders service listening on :8082...")
+          	_ = http.ListenAndServe(":8082", nil)
+          }
+      - path: docker-compose.yml
+        content: |
+          version: "3.8"
+          services:
+            gateway:
+              build:
+                context: .
+                dockerfile: services/gateway/Dockerfile
+              ports:
+                - "8080:8080"
+              depends_on:
+                - users
+                - orders
+            users:
+              build:
+                context: .
+                dockerfile: services/users/Dockerfile
+              ports:
+                - "8081:8081"
+            orders:
+              build:
+                context: .
+                dockerfile: services/orders/Dockerfile
+              ports:
+                - "8082:8082"
+      - path: .gitignore
+        content: |
+          bin/
+          *.exe
+          vendor/
+
+  - language: node
+    name: typescript-express
+    dirs:
+      - src
+      - src/routes
+      - src/middleware
+      - src/controllers
+    files:
+      - path: package.json
+        content: |
+          {
+            "name": "ts-express-api",
+            "version": "1.0.0",
+            "main": "dist/index.js",
+            "scripts": {
+              "build": "tsc",
+              "start": "node dist/index.js",
+              "dev": "tsx watch src/index.ts",
+              "test": "jest"
+            },
+            "dependencies": {
+              "express": "^4.18.2"
+            },
+            "devDependencies": {
+              "@types/express": "^4.17.21",
+              "@types/node": "^20.10.0",
+              "tsx": "^4.6.0",
+              "typescript": "^5.3.2"
+            }
+          }
+      - path: tsconfig.json
+        content: |
+          {
+            "compilerOptions": {
+              "target": "ES2022",
+              "module": "commonjs",
+              "lib": ["ES2022"],
+              "outDir": "./dist",
+              "rootDir": "./src",
+              "strict": true,
+              "esModuleInterop": true,
+              "skipLibCheck": true,
+              "forceConsistentCasingInFileNames": true,
+              "resolveJsonModule": true,
+              "declaration": true,
+              "declarationMap": true,
+              "sourceMap": true
+            },
+            "include": ["src/**/*"],
+            "exclude": ["node_modules", "dist"]
+          }
+      - path: src/index.ts
+        content: |
+          import express from 'express';
+
+          const app = express();
+          const PORT = process.env.PORT || 3000;
+
+          app.use(express.json());
+
+          app.get('/', (_req, res) => {
+            res.json({ message: 'Welcome to TypeScript Express API!' });
+          });
+
+          app.get('/health', (_req, res) => {
+            res.json({ status: 'ok', uptime: process.uptime() });
+          });
+
+          app.listen(PORT, () => {
+            console.log(`Server running on http://localhost:${PORT}`);
+          });
+      - path: .gitignore
+        content: |
+          node_modules/
+          dist/
+          .env
+          *.log
+
