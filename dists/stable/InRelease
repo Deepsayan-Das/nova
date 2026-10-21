@@ -4,35 +4,35 @@ Hash: SHA512
 Origin: GalactOS
 Label: GalactOS
 Codename: stable
-Date: Fri, 02 Oct 2026 03:23:57 UTC
+Date: Wed, 21 Oct 2026 03:58:54 UTC
 Architectures: amd64
 Components: main
 Description: GalactOS package repository
 MD5Sum:
- 1b08676218614e63d4970852089b2450 536 main/binary-amd64/Packages
- bf0c36c30c418b0e75f9af95c2801a49 387 main/binary-amd64/Packages.gz
+ 488aad036299f0063241dd585e7f6678 1191 main/binary-amd64/Packages
+ a6ba9aa448d115e839de63a1a9980acf 702 main/binary-amd64/Packages.gz
  a4e09956f5e8a03491a7c4227acda586 110 main/binary-amd64/Release
 SHA1:
- 194b30b85ef34f71b427d7af50bff341d62e41d0 536 main/binary-amd64/Packages
- ec05e63fe78fdfdda565858cd56ba8aff638d45c 387 main/binary-amd64/Packages.gz
+ f6caa863796627b4b8f7d01e96cea220260fc6a6 1191 main/binary-amd64/Packages
+ 98ec07891baf6a296f9b5308c518af217bcfc1db 702 main/binary-amd64/Packages.gz
  cf2f2a389619a9a0c4fb283c85aa997f053b0fcc 110 main/binary-amd64/Release
 SHA256:
- 0ea0fad63850735d1356643b4634a765e65fda6c2461e7a280bd31aeabb2fdab 536 main/binary-amd64/Packages
- 1a1e4cc2830205738c3610eb2c7019d7df7271de78ccb20d9bb115ac972e53aa 387 main/binary-amd64/Packages.gz
+ bd1cfb0a4c8d2c2b834c124afa0c45a0db3af9459c0e231cb98b7e35a5c87dad 1191 main/binary-amd64/Packages
+ 10f9ebf22d39b2db7ace156f4123fd2a7fce0316d7a6849ef24661256227825f 702 main/binary-amd64/Packages.gz
  48b72b528ea85ac6a316ad5f227f9b75804a060d81d46dd60f3ba19f49cfe202 110 main/binary-amd64/Release
 -----BEGIN PGP SIGNATURE-----
 
-iQIzBAEBCgAdFiEED5pneP9wMjbckA4YXPBvfYxJJQEFAmq/I9YACgkQXPBvfYxJ
-JQG/aBAAgUBCvV1Ev4z1j0G0shrBw3NqiOV6/gDEBL+SJ9jy3BjvT0Fzp5fqtFEP
-vTrfdCTR9rliijGGntOfEgWV4tNh/ZpOGDrHCEdDAnvwr7s3hYT+xOjcArhmndEa
-s3Iw842kc/uptrqj1enr/rwTkCtPD4/wdltXX8nBwPu1KmDbVmyFeZnO45dlstMW
-1bqEVvaYID0QMxcEl6+jS+XwC9FL7TpwPKrlRgABTjSlkw60M+UWg56PCRyGBIET
-CY38bN4mdXRuDdqpwIsQTInLNs+QlVinWWBI60Rrpn8wRk07XPLha6EoY9GreK60
-jGwlbnkoBEBG1GLLGmuDpRZbRfyWWSyDLoBaidERsCWUMwV3RvIgOT20zD6F6KvJ
-ZaCvS6GhgcTgw1OqDQrEnbncxk1Z7PzIb5AaM1HUKpfcuAJ1sSmoc2BE3FhuGoaV
-PJ2waEAeAMdLIt1uugkyeASrwg16SXlwAxml3TkS9a5Sx8pOXrJEYz/BorDHATuk
-3Lep1hk46Zb66AAhelp8IETLmyoK4GXUff5M41NerSNuuawmJ5A/3DKT5fKmI95C
-hOeIzGQHCaICVsgdVYNhKBiFkeT3t9QKxGvgNk1DkvQc7cBYcSJ0702HycJbQGh0
-nZYNCdr1QOwPT/cgO4JFtDa+eZWHjJgQKF1LvDdkmfRY/kkdiYM=
-=RTAP
+iQIzBAEBCgAdFiEED5pneP9wMjbckA4YXPBvfYxJJQEFAmrYOKkACgkQXPBvfYxJ
+JQFM0g/8Do9i92lb2VfjwF0ULXmtQqA4Mdr1B2lM1xpdaDYOQOYCVUFQSgOhiBKs
+GbqEIHpLN35lTbKwKgjnitSE2oN6vJjRxaSMPaNa/VpWov5pzWugiLgk1qt1CQva
+P2nxbJRu+k55Cn7XVS/0GEj0HswoGKc5mB/scy6mvV63l0EZIf/D74DdHpaXdG5q
+dsmeu0DazAiQ07hL8KAcBVKs90++M7ZkFKDyGs7xsYbv+bBomXRp5OQZPpufsctQ
+lhwrZH3u9nRtei0F0bBY5akgo4RBznT4dV+azfVYPStqYvJPs3Utfrfaf30RGp1e
+nAgo3Y5jId2EkWGH5J3PS+E/SiubzKJJ1mQOzLWLQNhSOuKbsuIa273XEVjbB71b
+11i72wv1CwrHcmUkJd0ZQkwJQdQcIVpgDY4xtm3BoUj5JTGMNs+NegcGfKKfSYsq
+QIvdCCyMeqkzvoIzpCbApwyS3KYeNbV+kodhvPHljPpvafsotSPX+761KVQOMEbk
++5SbsqE3Z/dLu73np8C1PdWVbQ+OU9iMmQIGXAgHHQBvmUWAlo00Z48EnXNhLmfb
+bnb+y7qP3mhROLIy7RN8dWVe0vqetXCeZjpcXvxZsxHHtnpFXvhRgmAvnE+KS1Q8
+n5NgDEKvYxYNDTn8wHirxeF+gcWTm2fhxreaRJcUxe2MwgNVDgE=
+=ZC6s
 -----END PGP SIGNATURE-----
