@@ -13,18 +13,18 @@ Description: GalactOS CLI tool for project development and container management.
  Nova provides streamlined environment management and project orchestration for GalactOS.
 
 Package: orbit
-Version: 0.1.0-1
+Version: 0.1.0-2
 Architecture: amd64
 Depends: python3 (>= 3.13), python3 (<< 3.14), git, ca-certificates
 Suggests: podman
 Maintainer: Deepsayan Das <deepsayandas274@gmail.com>
 Priority: optional
 Section: utils
-Filename: pool/main/o/orbit/orbit_0.1.0-1_amd64.deb
-Size: 89110836
-SHA256: 937e1de0c9e2ed22a1382bc2c7aaa6b108045d92a1df9fa29e0c4623911b976a
-SHA1: b0569de3367c4122d442caec1a4cc9b3050e82cd
-MD5sum: 8e7dc5a816520ab007b55eb112402dd2
+Filename: pool/main/o/orbit/orbit_0.1.0-2_amd64.deb
+Size: 89121056
+SHA256: 59ce31c87b3f593f5bb7046c6746dc465dfb2978088496913d20659bd8e2edfb
+SHA1: aab0db37bf40860d56b589bff5a999e752c84413
+MD5sum: d3b5c3548ef221644de91b73ba2508ea
 Description: Orbit, the AI coding assistant for GalactOS
  Provider-agnostic LLM runtime with hybrid RAG, a multi-step agent loop
  and a risk-tiered tool registry. Bring your own API key or use Ollama.
