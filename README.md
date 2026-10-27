@@ -1,3 +1,5 @@
+[![CI](https://github.com/Deepsayan-Das/nova/actions/workflows/ci.yml/badge.svg)](https://github.com/Deepsayan-Das/nova/actions/workflows/ci.yml)
+
 # Nova — GalactOS Command-Line Interface
 
 `nova` is the primary command-line tool for **GalactOS**, a custom Linux operating system distribution. Built in Go using the Cobra framework, `nova` provides developer utilities, container management powered by Podman, Kubernetes manifest generation, system diagnostics, project templating, and automated tool installation.
